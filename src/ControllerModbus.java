@@ -1,15 +1,12 @@
 import javafx.application.Application;
-import javafx.geometry.HPos;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.effect.BlendMode;
-import javafx.scene.layout.Border;
 import javafx.scene.layout.GridPane;
-import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
@@ -17,7 +14,8 @@ import javafx.stage.StageStyle;
 import de.re.easymodbus.exceptions.ModbusException;
 import de.re.easymodbus.modbusclient.ModbusClient;
 import java.io.IOException;
-
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class ControllerModbus extends  Application{
@@ -68,6 +66,9 @@ public class ControllerModbus extends  Application{
     @Override
     public void start(Stage stage) throws Exception {
 
+        //Image img = new Image("C:/Users/sin/IdeaProjects/ReocamUI/on.png");
+       // ImageView view1 = new ImageView();
+
         Label parameter = new Label("Parameter");
         parameter.setFont(Font.font("Lucida Grande", FontWeight.EXTRA_BOLD, FontPosture.REGULAR, 22));
         parameter.setAlignment(Pos.CENTER);
@@ -88,6 +89,11 @@ public class ControllerModbus extends  Application{
         TextField spout = new TextField();
         spout.setEditable(false);
         TextField spin = new TextField();
+        TextField timenow = new TextField();
+        Date date = new Date();
+
+        timenow.setText(date.toString());
+
 
 
         Button ok = new Button();
@@ -107,6 +113,11 @@ public class ControllerModbus extends  Application{
                 "    -fx-text-fill: gray;\n" +
                 "}");
 
+        Button go = new Button();
+        go.setText("START");
+       // go.setGraphic(view1);
+        Button stop = new Button();
+        stop.setText("STOP");
 
         GridPane gridpane = new GridPane();
         gridpane.setAlignment(Pos.CENTER);
@@ -114,13 +125,16 @@ public class ControllerModbus extends  Application{
         gridpane.setHgap(10);
         gridpane.setVgap(3);
 
-        gridpane.add(parameter,0,0);
-        gridpane.add(Pout,1,0);
-        gridpane.add(Pin,2,0);
-        gridpane.add(Temperature,0,1);
-        gridpane.add(spout,1,1);
-        gridpane.add(spin,2,1);
-        gridpane.add(ok,2,3);
+        gridpane.add(parameter,2,0);
+        gridpane.add(Pout,3,0);
+        gridpane.add(Pin,4,0);
+        gridpane.add(Temperature,2,1);
+        gridpane.add(spout,3,1);
+        gridpane.add(spin,4,1);
+        gridpane.add(ok,4,3);
+        gridpane.add(timenow,0,1);
+        gridpane.add(go,0,2);
+        gridpane.add(stop,0,3);
 
 
         Scene scene = new Scene(gridpane);
@@ -140,8 +154,10 @@ public class ControllerModbus extends  Application{
         ModbusClient modbusClient = new ModbusClient("192.168.0.218", 502);
         modbusClient.Connect();
 
-        float TRO = ModbusClient.ConvertRegistersToFloat(modbusClient.ReadInputRegisters(1500, 2));
-        spout.setText(String.valueOf(TRO));
+
+            float TRO = ModbusClient.ConvertRegistersToFloat(modbusClient.ReadInputRegisters(1500, 2));
+            spout.setText(String.valueOf(TRO));
+
 
         ok.setOnAction(event -> {
            String SPT = spin.getText();
@@ -157,6 +173,58 @@ public class ControllerModbus extends  Application{
 
         });
 
-    }
+
+        if (Arrays.toString(modbusClient.ReadDiscreteInputs(1024, 1)) == String.valueOf(1)) {
+
+            go.setVisible(false);
+            stop.setVisible(true);
+
+        }
+        else if (Arrays.toString(modbusClient.ReadDiscreteInputs(1024, 1)) == String.valueOf(0)) {
+
+            go.setVisible(true);
+            stop.setVisible(false);
+
+        }
+
+       go.setOnAction(event -> {
+           try {
+               modbusClient.WriteSingleCoil(1025,true); //Start
+           } catch (ModbusException e) {
+               e.printStackTrace();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+           try {
+               modbusClient.WriteSingleCoil(1025,false);
+           } catch (ModbusException e) {
+               e.printStackTrace();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+
+
+       });
+        stop.setOnAction(event -> {
+            try {
+                modbusClient.WriteSingleCoil(1024,true); //Stop
+            } catch (ModbusException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                modbusClient.WriteSingleCoil(1024,false);
+            } catch (ModbusException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+        });
+
 
 }
+}
+
